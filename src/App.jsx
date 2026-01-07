@@ -48,6 +48,22 @@ function App() {
       return texts.join("\n").trim();
   };
 
+  const parseJSONResponse = (reply) => {
+    try {
+      const match = reply.match(/\{[\s\S]*\}/);
+      const parsed = match ? JSON.parse(match[0]) : {};
+      if (!parsed.overallScore && !parsed.error){
+          throw new Error("Invaild AI response");
+      }
+      return parsed;
+    }catch(err){
+      throw new Error(`Failed to parse AI Response : ${err.message}`);
+    }
+  }
+
+  
+
+
   return (
     <div className="min-h-screen bg-main-gradient p-4 sm:p-6 lg:p-8 flex items-center justify-center">
       <h1 className="text-7xl text-white">AI RESUME ANALYZER</h1>
