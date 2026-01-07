@@ -61,9 +61,30 @@ function App() {
     }
   }
 
+  const analyzeResume = async (text) => {
+    const prompt = constants.ANALYZE_RESUME_PROMPT.replace(
+      "{{DOCUMENT_TEXT}}",
+      text
+    );
+
+    const response = await window.puter.ai.chat([
+      {role : "system" , content: "You are an expert resume reviewer..."},
+      {role : "user" , content: prompt },
+    ],
+      {
+        model: "gpt-4o",
+      }
+    );
+
+    const result = parseJSONResponse(
+      typeof response === "string" ? 
+        response : response.message?.content || ""
+    );
+    if (result.error) throw new Error(result.error);
+    return result;
+  };
+
   
-
-
   return (
     <div className="min-h-screen bg-main-gradient p-4 sm:p-6 lg:p-8 flex items-center justify-center">
       <h1 className="text-7xl text-white">AI RESUME ANALYZER</h1>
