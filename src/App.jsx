@@ -108,7 +108,12 @@ function App() {
     }
   }
 
-  
+  const reset = () => {
+    setUpLoadFile(null);
+    setAnalysis(null);
+    setResumeText("");
+    setPresenceChecklist([]);
+  }
 
   return (
     <div className="min-h-screen bg-main-gradient p-4 sm:p-6 lg:p-8 flex items-center justify-center">
