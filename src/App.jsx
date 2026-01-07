@@ -84,7 +84,32 @@ function App() {
     return result;
   };
 
+  const handleFileUpload = async (e) =>{
+    const file = e.target.files[0];
+    if (!file || file.type !== "application/pdf"){
+      return alert("Please Upload a PDF file Only.");
+    }
+    setUpLoadFile(file);
+    setIsLoading(true);
+    setAnalysis(null);
+    setResumeText("");
+    setPresenceChecklist([]);
+
+    try {
+      const text = await extractPDFText(file);
+      setResumeText(text);
+      setPresenceChecklist(buildPresenceChecklist(text));
+      setAnalysis(await analyzeResume(text));
+
+    }catch (err){
+      alert(`Error:${err.message}`);
+    }finally{
+      setAnalysis(false);
+    }
+  }
+
   
+
   return (
     <div className="min-h-screen bg-main-gradient p-4 sm:p-6 lg:p-8 flex items-center justify-center">
       <h1 className="text-7xl text-white">AI RESUME ANALYZER</h1>
