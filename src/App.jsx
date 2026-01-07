@@ -222,11 +222,58 @@ function App() {
                 width : `${(parseInt(analysis.overallScore)/10)*100}%`,
               }}></div>
             </div>
+
             <p className="text-slate-400 text-sm mt-3 text-center  font-medium">
               Score based on content quality , formatting , and keyword usage
             </p>
           </div>
-            
+            <div className="grid sm:grid-cols-2 gap-4">
+
+              <div className="feature-card-green group">
+                <div className="bg-green-500/20 icon-containner-lg mx-auto mb-3 group-hover:bg-gray-400/30 transition-colors">
+                <span className="text-green-300">✓</span>
+                </div>
+                <h4 className="text-green-300 text-sm font-semibold uppercase tracking-wide mb-3">
+                  Top Strengths
+                </h4>
+                <div className="space-y-2 text-left">
+                  {analysis.strengths.slice(0 , 3).map
+                  ((strength , index ) => (
+                    <div key={index} className="list-item-green">
+                      <span className="text-green-400 text-sm mt-0.5">*</span>
+
+                      <span className="text-slate-200 font-medium text-sm leading-relaxed">
+                        {strength}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+
+
+                  <div className="feature-card-orange group">
+                <div className="bg-orange-500/20 icon-containner-lg mx-auto mb-3 group-hover:bg-gray-400/30 transition-colors">
+                <span className="text-orange-300">⚡</span>
+                </div>
+                <h4 className="text-orange-300 text-sm font-semibold uppercase tracking-wide mb-3">
+                  Main Improvements
+                </h4>
+                <div className="space-y-2 text-left">
+                  {analysis.improvements.slice(0 , 3).map
+                  ((improvement , index ) => (
+                    <div key={index} className="list-item-orange">
+                      <span className="text-orange-400 text-sm mt-0.5">*</span>
+
+                      <span className="text-slate-200 font-medium text-sm leading-relaxed">
+                        {strength}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
           </div>
         )}
       </div>
