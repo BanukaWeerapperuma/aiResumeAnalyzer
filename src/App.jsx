@@ -667,7 +667,7 @@ function App() {
             </div>
               <div className="info-box-sky">
                 <p className="text-slate-300 text-sm leading-relaxed">
-                  Roles related to the ones above — useful for broader job searches and transfers.
+                  Roles related to the ones above - useful for broader job searches and transfers.
                 </p>
               </div>
                </div>
