@@ -1,3 +1,6 @@
+import { inferRolesFromKeywords } from './inferRoles.js';
+import { getRelatedRoles } from './relatedRoles.js';
+
 const constants = {
   ANALYZE_RESUME_PROMPT: `First, determine if this document is actually a resume. Look for:
 - Professional experience, work history, or employment information
@@ -179,3 +182,5 @@ export const buildPresenceChecklist = (text) => {
 };
 
 export default constants;
+
+export { inferRolesFromKeywords, getRelatedRoles };

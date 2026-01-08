@@ -1,0 +1,356 @@
+import { inferRolesFromKeywords } from "./inferRoles.js";
+
+export const getRelatedRoles = (roles = []) => {
+  const map = {
+    "Software Engineer": ["Full Stack Developer", "Backend Developer", "Frontend Developer"],
+    "Full Stack Developer": ["Software Engineer", "Frontend Developer", "Backend Developer"],
+    "Frontend Developer": ["Web Designer", "UI/UX Designer"],
+    "Backend Developer": ["DevOps / Site Reliability Engineer", "API Developer"],
+    "UI/UX Designer": ["Web Designer", "Graphic Designer", "Art Director"],
+    "Graphic Designer": ["Art Director", "Digital Artist"],
+    "Web Designer": ["Frontend Developer", "UI/UX Designer"],
+    "Digital Artist": ["Graphic Designer", "Art Director"],
+    "Multimedia Designer": ["Motion Graphics / Multimedia Designer", "Video Editor"],
+    "Registered Nurse": ["Clinical Nurse Specialist", "Midwife / Maternal Health Nurse"],
+    "Clinical Nurse Specialist": ["Registered Nurse", "Specialist Doctor"],
+    "Medical Officer": ["General Physician", "Specialist Doctor"],
+    "General Physician": ["Medical Officer", "Specialist Doctor"],
+    "Specialist Doctor": ["Medical Officer"],
+    "School Teacher": ["Secondary School Teacher", "Lecturer", "Education Consultant"],
+    "Secondary School Teacher": ["School Teacher", "Lecturer"],
+    "Lecturer": ["Professor", "Education Consultant"],
+    "Education Consultant": ["Lecturer", "School Teacher"],
+    "Art Director": ["Creative / Art Director", "Graphic Designer"],
+    "Motion Graphics / Multimedia Designer": ["Multimedia Designer", "Video Editor"],
+    "Video Editor": ["Motion Graphics / Multimedia Designer", "Multimedia Designer"],
+    "Creative / Art Director": ["Art Director", "Graphic Designer", "Multimedia Designer"],
+    "Database Administrator": ["Data Analyst", "Data Engineer", "Software Engineer"],
+    "Data Analyst": ["Business Analyst", "Data Scientist", "Database Administrator"],
+    "Data Scientist": ["Data Analyst", "Machine Learning Engineer", "AI Engineer"],
+    "Machine Learning Engineer": ["Data Scientist", "AI Engineer", "Software Engineer"],
+    "AI Engineer": ["Machine Learning Engineer", "Data Scientist", "Robotics Engineer"],
+    "Robotics Engineer": ["AI Engineer", "Mechanical Engineer", "Automation Engineer"],
+    "Mechanical Engineer": ["Robotics Engineer", "Automation Engineer", "Industrial Engineer"],
+    "Electrical Engineer": ["Electronics Engineer", "Control Systems Engineer", "Automation Engineer"],
+    "Electronics Engineer": ["Electrical Engineer", "Embedded Systems Engineer", "IoT Engineer"],
+    "Embedded Systems Engineer": ["Electronics Engineer", "IoT Engineer", "Firmware Engineer"],
+    "IoT Engineer": ["Embedded Systems Engineer", "Electronics Engineer", "Software Engineer"],
+    "Firmware Engineer": ["Embedded Systems Engineer", "Electronics Engineer", "IoT Engineer"],
+    "DevOps / Site Reliability Engineer": ["Backend Developer", "Cloud Engineer", "Infrastructure Engineer"],
+    "Cloud Engineer": ["DevOps / Site Reliability Engineer", "Backend Developer", "Software Engineer"],
+    "Infrastructure Engineer": ["DevOps / Site Reliability Engineer", "Network Engineer", "Cloud Engineer"],
+    "Network Engineer": ["Infrastructure Engineer", "Security Engineer", "Systems Administrator"],
+    "Systems Administrator": ["Network Engineer", "Infrastructure Engineer", "Security Engineer"],
+    "Security Engineer": ["Network Engineer", "Systems Administrator", "Cybersecurity Analyst"],
+    "Cybersecurity Analyst": ["Security Engineer", "Penetration Tester", "Security Consultant"],
+    "Penetration Tester": ["Cybersecurity Analyst", "Security Consultant", "Ethical Hacker"],
+    "Ethical Hacker": ["Penetration Tester", "Cybersecurity Analyst", "Security Consultant"],
+    "Security Consultant": ["Cybersecurity Analyst", "Penetration Tester", "Ethical Hacker"],
+    "Business Analyst": ["Data Analyst", "Project Manager", "Product Manager"],
+    "Project Manager": ["Business Analyst", "Product Manager", "Program Manager"],
+    "Program Manager": ["Project Manager", "Product Manager", "Operations Manager"],
+    "Product Manager": ["Project Manager", "Business Analyst", "UX Researcher"],
+    "UX Researcher": ["Product Manager", "UI/UX Designer", "Human Factors Specialist"],
+    "Human Factors Specialist": ["UX Researcher", "Industrial Designer", "UI/UX Designer"],
+    "Industrial Designer": ["Human Factors Specialist", "Mechanical Engineer", "Product Designer"],
+    "Product Designer": ["Industrial Designer", "UI/UX Designer", "Graphic Designer"],
+    "Digital Marketing Specialist": ["SEO Specialist", "Content Strategist", "Social Media Manager"],
+    "SEO Specialist": ["Digital Marketing Specialist", "Content Strategist", "Web Analyst"],
+    "Content Strategist": ["Digital Marketing Specialist", "SEO Specialist", "Copywriter"],
+    "Copywriter": ["Content Strategist", "Marketing Specialist", "Technical Writer"],
+    "Technical Writer": ["Copywriter", "Documentation Specialist", "Instructional Designer"],
+    "Documentation Specialist": ["Technical Writer", "Information Architect", "Content Strategist"],
+    "Instructional Designer": ["Technical Writer", "eLearning Developer", "Content Strategist"],
+    "eLearning Developer": ["Instructional Designer", "Software Engineer", "Multimedia Designer"],
+    "Social Media Manager": ["Digital Marketing Specialist", "Content Strategist", "Community Manager"],
+    "Community Manager": ["Social Media Manager", "Content Strategist", "Brand Manager"],
+    "Brand Manager": ["Community Manager", "Marketing Specialist", "Digital Marketing Specialist"],
+    "Marketing Specialist": ["Brand Manager", "Digital Marketing Specialist", "Content Strategist"],
+    "Event Manager": ["Marketing Specialist", "Public Relations Specialist", "Brand Manager"],
+    "Public Relations Specialist": ["Event Manager", "Marketing Specialist", "Brand Manager"],
+    "Customer Success Manager": ["Account Manager", "Business Analyst", "Product Manager"],
+    "Account Manager": ["Customer Success Manager", "Sales Manager", "Business Development Manager"],
+    "Sales Manager": ["Account Manager", "Business Development Manager", "Marketing Specialist"],
+    "Business Development Manager": ["Sales Manager", "Account Manager", "Project Manager"],
+    "Operations Manager": ["Program Manager", "Project Manager", "Supply Chain Manager"],
+    "Supply Chain Manager": ["Operations Manager", "Logistics Manager", "Procurement Manager"],
+    "Logistics Manager": ["Supply Chain Manager", "Operations Manager", "Warehouse Manager"],
+    "Warehouse Manager": ["Logistics Manager", "Operations Manager", "Inventory Manager"],
+    "Procurement Manager": ["Supply Chain Manager", "Operations Manager", "Purchasing Manager"],
+    "Purchasing Manager": ["Procurement Manager", "Supply Chain Manager", "Inventory Manager"],
+    "Inventory Manager": ["Warehouse Manager", "Procurement Manager", "Operations Manager"],
+    "Quality Assurance Engineer": ["Software Engineer", "Test Engineer", "Automation Tester"],
+    "Test Engineer": ["Quality Assurance Engineer", "Automation Tester", "Software Engineer"],
+    "Automation Tester": ["Quality Assurance Engineer", "Test Engineer", "Software Engineer"],
+    "Game Developer": ["Unity Developer", "Unreal Engine Developer", "Graphics Programmer"],
+    "Unity Developer": ["Game Developer", "C# Developer", "3D Artist"],
+    "Unreal Engine Developer": ["Game Developer", "C++ Developer", "3D Artist"],
+    "Graphics Programmer": ["Game Developer", "Shader Developer", "3D Artist"],
+    "C# Developer": ["Unity Developer", "Software Engineer", "Backend Developer"],
+    "C++ Developer": ["Unreal Engine Developer", "Software Engineer", "Backend Developer"],
+    "Shader Developer": ["Graphics Programmer", "3D Artist", "Game Developer"],
+    "3D Artist": ["Graphics Programmer", "Unity Developer", "Unreal Engine Developer"],
+    "Animator": ["3D Artist", "Motion Graphics Designer", "Multimedia Designer"],
+    "Film Director": ["Producer", "Screenwriter", "Cinematographer"],
+    "Producer": ["Film Director", "Production Manager", "Executive Producer"],
+    "Screenwriter": ["Film Director", "Script Editor", "Story Developer"],
+    "Cinematographer": ["Film Director", "Camera Operator", "Lighting Technician"],
+    "Camera Operator": ["Cinematographer", "Videographer", "Director of Photography"],
+    "Lighting Technician": ["Cinematographer", "Set Designer", "Camera Operator"],
+    "Set Designer": ["Lighting Technician", "Art Director", "Production Designer"],
+    "Production Designer": ["Set Designer", "Art Director", "Creative Director"],
+    "Creative Director": ["Art Director", "Production Designer", "Brand Manager"],
+    "Chef": ["Sous Chef", "Pastry Chef", "Kitchen Manager"],
+    "Sous Chef": ["Chef", "Pastry Chef", "Line Cook"],
+    "Pastry Chef": ["Chef", "Sous Chef", "Baker"],
+    "Baker": ["Pastry Chef", "Chef", "Food Stylist"],
+    "Line Cook": ["Sous Chef", "Chef", "Kitchen Staff"],
+    "Kitchen Manager": ["Chef", "Sous Chef", "Food and Beverage Manager"],
+    "Food Stylist": ["Baker", "Chef", "Photographer"],
+    "Photographer": ["Food Stylist", "Photo Editor", "Videographer"],
+    "Photo Editor": ["Photographer", "Graphic Designer", "Digital Artist"],
+    "Videographer": ["Photographer", "Video Editor", "Camera Operator"],
+    "Journalist": ["Reporter", "Editor", "Content Writer"],
+    "Reporter": ["Journalist", "Field Correspondent", "News Anchor"],
+    "News Anchor": ["Reporter", "Journalist", "Broadcast Producer"],
+    "Editor": ["Journalist", "Copywriter", "Proofreader"],
+    "Proofreader": ["Editor", "Technical Writer", "Copywriter"],
+    "Content Writer": ["Journalist", "Copywriter", "Content Strategist"],
+    "Field Correspondent": ["Reporter", "Journalist", "Photojournalist"],
+    "Photojournalist": ["Field Correspondent", "Photographer", "Videographer"],
+
+    // =======================
+// Technology / IT / Software
+// =======================
+"Quantum Software Developer": ["Quantum Algorithm Engineer", "AI Engineer", "Software Engineer"],
+"Quantum Algorithm Engineer": ["Quantum Software Developer", "Machine Learning Engineer", "AI Engineer"],
+"AI Hardware Specialist": ["AI Engineer", "Embedded Systems Engineer", "Neural Interface Developer"],
+"Edge AI Engineer": ["AI Engineer", "AI-Powered Cloud Specialist", "Hybrid Cloud AI Engineer"],
+"Neural Network Specialist": ["Machine Learning Engineer", "AI Engineer", "Deep Reinforcement Learning Engineer"],
+"Deep Reinforcement Learning Engineer": ["Neural Network Specialist", "AI Engineer", "Machine Learning Engineer"],
+"Robotics Control Engineer": ["Robotics Engineer", "AI-Driven Robotics Engineer", "Automation Engineer"],
+"Swarm Robotics Engineer": ["Robotics Engineer", "Autonomous Systems Designer", "AI-Driven Robotics Engineer"],
+"Autonomous Drone Developer": ["Drone AI Engineer", "AI-Driven Robotics Engineer", "Autonomous Systems Designer"],
+"AR/VR Interaction Designer": ["XR Experience Manager", "AI-Powered XR Designer", "UI/UX Designer"],
+"XR Experience Manager": ["AR/VR Interaction Designer", "XR Creative AI Producer", "Digital Interaction Designer"],
+"Digital Twin Developer": ["Digital Twin Analyst", "AI-Powered Simulation Engineer", "Machine Learning Engineer"],
+"Cyber-Physical Systems Engineer": ["Cyber-Physical Manufacturing Data Scientist", "Industrial AI Engineer", "Automation Engineer"],
+"IoT Security Architect": ["IoT Engineer", "Embedded Systems Engineer", "Security Engineer"],
+"IoT Data Analyst": ["IoT Engineer", "Data Analyst", "Industrial IoT AI Engineer"],
+"AI Game Designer": ["Game AI Designer", "Game Developer", "AI Creative Designer"],
+"AI UX Designer": ["UX Researcher", "UI/UX Designer", "AI Experience Designer"],
+"AI Ethics Engineer": ["AI Ethics Consultant", "AI Governance Specialist", "AI Fairness Analyst"],
+"AI Solutions Consultant": ["AI Engineer", "Machine Learning Engineer", "AI-Powered Analytics Consultant"],
+"AI Model Validator": ["Clinical AI Model Validator", "AI Engineer", "Machine Learning Engineer"],
+
+// =======================
+// Business / Finance
+// =======================
+"FinTech Risk Analyst": ["AI Financial Strategist", "Digital Asset Analyst", "Financial Data Governance Analyst"],
+"FinTech Operations Manager": ["FinTech Innovation Specialist", "Digital Banking Specialist", "AI-Powered Risk Analyst"],
+"Investment Operations Analyst": ["Financial Data Scientist", "AI-Powered Investment Analyst", "Corporate Innovation Analyst"],
+"Corporate Finance Associate": ["Financial Planning Manager", "Business Analyst", "Financial Innovation Specialist"],
+"Corporate Finance Manager": ["Corporate Finance Associate", "Financial Innovation Specialist", "Finance Transformation Consultant"],
+"M&A Analyst": ["Corporate Finance Associate", "Venture Capital Analyst", "Business Analyst"],
+"M&A Consultant": ["M&A Analyst", "Business Consultant", "Corporate Finance Manager"],
+"Private Equity Analyst": ["Venture Capital Analyst", "Financial Data Scientist", "Investment Operations Analyst"],
+"Venture Capital Analyst": ["Private Equity Analyst", "Financial Data Scientist", "Corporate Innovation Analyst"],
+"Venture Capital Associate": ["Venture Capital Analyst", "Business Analyst", "Corporate Finance Manager"],
+"Business Transformation Lead": ["Corporate Innovation Analyst", "Business Analyst", "Finance Transformation Consultant"],
+"Innovation Strategist": ["Business Transformation Lead", "Corporate Innovation Analyst", "Digital Strategy Analyst"],
+"Digital Strategy Analyst": ["Innovation Strategist", "Business Analyst", "Corporate Digital Strategy Analyst"],
+"E-Commerce Strategy Manager": ["E-Commerce AI Product Manager", "Retail Transformation AI Specialist", "Digital Marketing Specialist"],
+"Retail Transformation Consultant": ["Retail Transformation AI Specialist", "Digital Strategy Analyst", "Business Transformation Lead"],
+"Revenue Operations Analyst": ["Finance Transformation Consultant", "Business Analyst", "AI-Powered Analytics Consultant"],
+"Revenue Operations Manager": ["Revenue Operations Analyst", "Finance Transformation Manager", "Operations Manager"],
+"Business Continuity Specialist": ["Operations Manager", "Supply Chain Manager", "Risk Analyst"],
+"Financial Planning Manager": ["Corporate Finance Associate", "Corporate Finance Manager", "Financial Innovation Manager"],
+"Treasury Specialist": ["Corporate Finance Associate", "Finance Transformation Consultant", "Financial Data Scientist"],
+
+// =======================
+// Healthcare / Life Sciences
+// =======================
+"AI Health Solutions Specialist": ["AI-Powered Healthcare Analyst", "Healthcare Innovation Analyst", "HealthTech Data Engineer"],
+"Clinical AI Engineer": ["Clinical AI Project Manager", "Clinical AI Strategy Consultant", "Machine Learning Engineer"],
+"Genomics Data Scientist": ["Clinical Genomics Specialist", "Bioinformatics AI Developer", "Population Health Data Scientist"],
+"Clinical Bioinformatics Specialist": ["Bioinformatics AI Developer", "Genomics Data Scientist", "Healthcare Innovation Analyst"],
+"Telemedicine Program Manager": ["Telemedicine AI Consultant", "Healthcare Operations Analyst", "HealthTech Data Engineer"],
+"Healthcare Operations Analyst": ["AI-Powered Healthcare Analyst", "Healthcare Innovation Analyst", "Medical Analytics Specialist"],
+"Healthcare Innovation Manager": ["Healthcare Innovation Analyst", "Digital Health AI Specialist", "AI-Powered Healthcare Analyst"],
+"Clinical Trial Project Manager": ["Clinical AI Project Manager", "Healthcare Operations Analyst", "Medical AI Validation Engineer"],
+"Healthcare Compliance Analyst": ["Medical AI Compliance Officer", "AI-Powered Healthcare Analyst", "Healthcare Operations Analyst"],
+"Medical Device Data Analyst": ["Medical Device AI Specialist", "HealthTech Data Engineer", "Data Analyst"],
+"Healthcare Strategy Consultant": ["Healthcare Innovation Analyst", "Healthcare Operations Analyst", "AI-Powered Analytics Consultant"],
+"Public Health Program Manager": ["Population Health AI Analyst", "Population Health Data Scientist", "Healthcare Operations Analyst"],
+"Population Health Analyst": ["Population Health Data Scientist", "Healthcare Analytics Specialist", "Public Health Program Manager"],
+"Healthcare Risk Manager": ["AI-Powered Risk Analyst", "Healthcare Compliance Analyst", "Financial Risk Analyst"],
+"Medical Robotics Engineer": ["Medical Robotics Integration Engineer", "AI-Driven Robotics Engineer", "Automation Engineer"],
+"Bioinformatics Analyst": ["Bioinformatics AI Developer", "Data Scientist", "Genomics Data Scientist"],
+"Precision Medicine Specialist": ["Precision Medicine Data Analyst", "Genomics Data Scientist", "Clinical AI Engineer"],
+"Medical AI Researcher": ["Clinical AI Engineer", "Medical AI Validation Engineer", "AI Engineer"],
+"Health IT Consultant": ["HealthTech Data Engineer", "Healthcare Innovation Analyst", "AI-Powered Analytics Consultant"],
+"Digital Health Specialist": ["Digital Health AI Specialist", "Telehealth AI Specialist", "Healthcare Innovation Analyst"],
+
+// =======================
+// Engineering / Manufacturing
+// =======================
+"Advanced Manufacturing Engineer": ["Industrial AI Engineer", "Automation Integration Engineer", "Manufacturing Strategy Analyst"],
+"Nanotechnology Research Engineer": ["Nanotechnology Data Scientist", "Advanced Manufacturing Engineer", "Industrial AI Engineer"],
+"Smart Factory Engineer": ["Smart Factory Integration Engineer", "Industrial AI Engineer", "AI-Driven Manufacturing Analyst"],
+"Industrial AI Engineer": ["Machine Learning Engineer", "AI-Driven Manufacturing Analyst", "Robotics Systems Integration Specialist"],
+"Industrial IoT Specialist": ["Industrial IoT AI Engineer", "IoT Engineer", "Embedded Systems Engineer"],
+"Automation Integration Engineer": ["Robotics Systems Integration Specialist", "AI-Driven DevOps Engineer", "Industrial AI Engineer"],
+"Energy Optimization Engineer": ["Energy Systems Data Analyst", "Renewable Energy AI Project Manager", "Sustainable Manufacturing Data Scientist"],
+"Sustainable Materials Engineer": ["Smart Materials Engineer", "Advanced Manufacturing Engineer", "Nanotechnology Research Engineer"],
+"CAD/CAM Specialist": ["Mechanical Engineer", "Industrial Designer", "Manufacturing Strategy Analyst"],
+"Mechatronics Engineer": ["Mechanical Engineer", "Electrical Engineer", "Automation Engineer"],
+
+// =======================
+// Education / Training
+// =======================
+"Learning Analytics Specialist": ["AI-Enhanced Learning Analyst", "EdTech Data Scientist", "Instructional Analytics AI Specialist"],
+"AI Education Consultant": ["EdTech AI Specialist", "Instructional Designer", "AI-Powered Curriculum Specialist"],
+"EdTech Product Manager": ["EdTech Product AI Manager", "AI-Powered Analytics Consultant", "Digital Learning AI Strategist"],
+"Online Curriculum Specialist": ["AI-Powered Curriculum Specialist", "Adaptive Curriculum AI Specialist", "Instructional Designer"],
+"Adaptive Learning Designer": ["Adaptive Learning Data Scientist", "AI-Enhanced Learning Analyst", "Learning Experience AI Designer"],
+
+// =======================
+// Technology / IT / Software - Extended
+// =======================
+"Quantum Systems Engineer": ["Quantum Software Developer", "Quantum Algorithm Engineer", "Quantum Cryptography Specialist"],
+"Quantum Cryptography Specialist": ["Quantum Systems Engineer", "Cybersecurity Analyst", "AI Hardware Specialist"],
+"Neuromorphic Computing Engineer": ["AI Hardware Specialist", "Edge AI Engineer", "Cognitive AI Engineer"],
+"Brain-Computer Interface Developer": ["Neural Interface Developer", "AI Engineer", "Cognitive Systems Engineer"],
+"Cognitive AI Engineer": ["Neuromorphic Computing Engineer", "AI Engineer", "Machine Learning Engineer"],
+"Explainable AI Specialist": ["AI Ethics Engineer", "AI Governance Specialist", "AI Model Validator"],
+"AI Fairness Analyst": ["Explainable AI Specialist", "AI Ethics Consultant", "AI Governance Specialist"],
+"Synthetic Data Engineer": ["AI Model Validator", "Machine Learning Engineer", "Data Engineer"],
+"AI Simulation Developer": ["Digital Twin Developer", "Simulation Engineer", "AI-Powered Simulation Engineer"],
+"AI Performance Engineer": ["AI Simulation Developer", "Machine Learning Engineer", "AI Hardware Specialist"],
+"Autonomous AI System Designer": ["Autonomous Systems Designer", "AI-Powered Robotics Engineer", "Swarm Robotics Engineer"],
+"AI-Driven Robotics Engineer": ["Robotics Control Engineer", "Autonomous Drone Developer", "Swarm Robotics Engineer"],
+"Robotics Simulation Engineer": ["AI Simulation Developer", "AI-Driven Robotics Engineer", "Robotics Systems Integration Specialist"],
+"HCI Specialist": ["UX Researcher", "Human Factors Specialist", "AI UX Designer"],
+"Human-Robot Interaction Engineer": ["HCI Specialist", "Robotics Control Engineer", "Autonomous Systems Designer"],
+"Digital Twin Analyst": ["Digital Twin Developer", "AI Simulation Developer", "Industrial AI Engineer"],
+"AI Governance Specialist": ["AI Ethics Engineer", "AI Model Validator", "AI Fairness Analyst"],
+"AI Product Compliance Specialist": ["AI Governance Specialist", "AI Ethics Engineer", "AI Model Validator"],
+"Machine Learning Infrastructure Engineer": ["DevOps / Site Reliability Engineer", "AI Engineer", "Cloud Engineer"],
+
+// =======================
+// Business / Finance - Extended
+// =======================
+"AI-Driven Finance Analyst": ["AI Financial Strategist", "Financial Data Scientist", "Algorithmic Trading Engineer"],
+"FinTech Product Analyst": ["FinTech Operations Manager", "Digital Asset Analyst", "RegTech Analyst"],
+"RegTech Analyst": ["RegTech Product Analyst", "Regulatory Compliance Specialist", "Blockchain Compliance Specialist"],
+"Digital Asset Manager": ["Digital Asset Analyst", "Blockchain Strategy Manager", "Crypto Operations Analyst"],
+"Crypto Compliance Officer": ["Blockchain Compliance Specialist", "RegTech Analyst", "Financial Innovation Specialist"],
+"Smart Contract Auditor": ["Blockchain Compliance Specialist", "RegTech Analyst", "DeFi Product Manager"],
+"DeFi Analyst": ["Digital Asset Analyst", "FinTech Analyst", "AI-Powered Investment Analyst"],
+"NFT Marketplace Specialist": ["NFT Strategy Consultant", "Digital Asset Analyst", "Tokenomics Analyst"],
+"Tokenomics Analyst": ["NFT Strategy Consultant", "Digital Asset Analyst", "Blockchain Strategy Manager"],
+"Blockchain Strategy Manager": ["NFT Strategy Consultant", "Digital Asset Analyst", "Smart Contract Auditor"],
+"Digital Payments Analyst": ["FinTech Product Analyst", "Digital Banking Specialist", "AI Financial Strategist"],
+"Financial Innovation Specialist": ["Corporate Finance Manager", "FinTech Innovation Specialist", "AI Business Consultant"],
+"AI Business Consultant": ["AI-Powered Analytics Consultant", "Business Analyst", "Corporate Innovation Analyst"],
+"Financial Data Scientist": ["Data Scientist", "AI-Powered Investment Analyst", "AI Business Consultant"],
+"Algorithmic Trading Engineer": ["Financial Data Scientist", "AI Engineer", "Machine Learning Engineer"],
+"Hedge Fund AI Specialist": ["Algorithmic Trading Engineer", "AI-Powered Investment Analyst", "AI Business Consultant"],
+"Venture Analytics Specialist": ["Venture Capital Analyst", "AI Business Consultant", "Financial Data Scientist"],
+"Corporate Innovation Analyst": ["Business Transformation Lead", "Digital Strategy Analyst", "AI Business Consultant"],
+"Business Intelligence Strategist": ["Business Analyst", "Data Analyst", "Digital Strategy Analyst"],
+"Finance Transformation Manager": ["Revenue Operations Manager", "Corporate Finance Manager", "AI-Powered Risk Analyst"],
+
+// =======================
+// Healthcare / Life Sciences - Extended
+// =======================
+"Bioinformatics AI Engineer": ["Bioinformatics Analyst", "Genomics Data Scientist", "Clinical Bioinformatics Specialist"],
+"Clinical Genomics Specialist": ["Genomics Data Scientist", "Bioinformatics Analyst", "Precision Medicine Specialist"],
+"Precision Medicine Data Scientist": ["Precision Medicine Specialist", "Clinical Genomics Specialist", "Healthcare AI Engineer"],
+"Healthcare Robotics Specialist": ["Medical Robotics Engineer", "AI-Driven Robotics Engineer", "Automation Engineer"],
+"Medical Device AI Developer": ["Medical Device Data Analyst", "Medical Device AI Specialist", "AI Engineer"],
+"Healthcare Simulation Engineer": ["Simulation Engineer", "AI Simulation Developer", "Medical Robotics Integration Engineer"],
+"Telehealth AI Specialist": ["Telemedicine AI Consultant", "Digital Health AI Specialist", "Healthcare Innovation Analyst"],
+"Digital Therapeutics Analyst": ["Digital Health AI Specialist", "AI-Powered Healthcare Analyst", "Healthcare Innovation Analyst"],
+"Population Health Data Scientist": ["Population Health Analyst", "Population Health AI Analyst", "Healthcare Operations Analyst"],
+"Pharma Data Analyst": ["Clinical Trial Project Manager", "Healthcare Operations Analyst", "Healthcare AI Engineer"],
+"Clinical Operations AI Analyst": ["Clinical AI Project Manager", "Healthcare Operations Analyst", "AI Engineer"],
+"Healthcare Innovation Consultant": ["AI Health Solutions Specialist", "Healthcare Innovation Analyst", "Health IT Consultant"],
+"Healthcare Technology Strategist": ["Health IT Consultant", "Healthcare Innovation Analyst", "AI Business Consultant"],
+"Medical AI Compliance Officer": ["Medical AI Researcher", "AI Product Compliance Specialist", "Healthcare Compliance Analyst"],
+"Biomedical AI Researcher": ["Bioinformatics AI Engineer", "AI Engineer", "Clinical AI Engineer"],
+"Neuroinformatics Specialist": ["Brain-Computer Interface Developer", "Neural Interface Developer", "Precision Medicine Specialist"],
+"AI Drug Discovery Specialist": ["Machine Learning Engineer", "Bioinformatics AI Engineer", "Clinical AI Engineer"],
+"Clinical AI Model Validator": ["AI Model Validator", "Clinical AI Engineer", "Healthcare Operations Analyst"],
+"Medical Imaging AI Specialist": ["Medical AI Researcher", "Healthcare AI Engineer", "AI Engineer"],
+"HealthTech Product Manager": ["Health IT Consultant", "AI-Powered Healthcare Analyst", "Digital Health Specialist"],
+
+// =======================
+// Engineering / Manufacturing - Extended
+// =======================
+"Smart Materials Engineer": ["Sustainable Materials Engineer", "Nanotechnology Research Engineer", "Advanced Manufacturing Engineer"],
+"Nano-Engineering Specialist": ["Nanotechnology Research Engineer", "Industrial AI Engineer", "Advanced Manufacturing Engineer"],
+"Industrial IoT Data Scientist": ["Industrial IoT Specialist", "IoT Data Analyst", "Industrial AI Engineer"],
+"Sustainable Manufacturing Strategist": ["Sustainable Manufacturing Data Scientist", "Energy Optimization Engineer", "Manufacturing Strategy AI Consultant"],
+"Robotics Systems Integration Engineer": ["Industrial Robotics AI Engineer", "Robotics Systems Architect", "Automation Integration Engineer"],
+"Advanced Robotics Programmer": ["Robotics Systems Integration Engineer", "AI-Driven Robotics Engineer", "Robotics Control Engineer"],
+"Industrial AI Systems Analyst": ["Industrial AI Engineer", "Machine Learning Engineer", "Industrial IoT AI Engineer"],
+"Additive Manufacturing Specialist": ["3D Printing Engineer", "Industrial AI Engineer", "Advanced Manufacturing Engineer"],
+"3D Printing Engineer": ["Additive Manufacturing Specialist", "CAD/CAM Specialist", "Mechanical Engineer"],
+"Manufacturing Automation Analyst": ["Automation Integration Engineer", "Industrial AI Engineer", "Lean Automation Data Analyst"],
+"Energy Efficiency Data Analyst": ["Energy Systems Data Analyst", "Sustainable Manufacturing Data Scientist", "Energy Optimization Engineer"],
+
+// =======================
+// Creative / Design / Media - Extended
+// =======================
+"XR Creative Director": ["AI-Powered XR Designer", "XR Experience Manager", "Creative Director"],
+"VR Experience Designer": ["XR Experience Manager", "AR/VR Interaction Designer", "AI Experience Designer"],
+"AR Content Strategist": ["AI-Powered XR Designer", "Digital Interaction Designer", "Creative Director"],
+"AI Creative Producer": ["AI-Powered Creative Strategist", "XR Creative AI Producer", "AI Experience Designer"],
+"Interactive Media Specialist": ["AI Multimedia Innovation Specialist", "Digital Interaction AI Designer", "UI/UX Designer"],
+"3D XR Designer": ["3D XR AI Designer", "XR Experience Manager", "Motion Graphics Specialist"],
+"Motion Graphics Specialist": ["AI Motion Graphics Specialist", "Animator", "Multimedia Designer"],
+"Digital Experience Producer": ["AI Digital Experience Manager", "AI Experience Designer", "Creative Director"],
+"UI/UX Interaction Specialist": ["UX Researcher", "AI UX Designer", "UI/UX Designer"],
+
+// =======================
+// Logistics / Transportation - Extended
+// =======================
+"Autonomous Vehicle Analyst": ["Autonomous Vehicle Data Scientist", "AI-Driven Robotics Engineer", "Transportation Analytics Specialist"],
+"Fleet Data Analyst": ["Fleet AI Operations Specialist", "Smart Fleet Data Scientist", "Logistics AI Product Manager"],
+"Logistics Strategy Consultant": ["Logistics Innovation AI Specialist", "Operations Manager", "Supply Chain Manager"],
+"Smart Logistics Engineer": ["Industrial AI Engineer", "AI-Driven DevOps Engineer", "Transportation Analytics AI Specialist"],
+"Warehouse Robotics Specialist": ["Warehouse Automation AI Specialist", "Industrial Robotics AI Engineer", "AI-Powered Robotics Engineer"],
+"Transportation Systems Analyst": ["Intelligent Transport Systems AI Analyst", "Transportation Analytics AI Specialist", "Logistics Technology Manager"],
+"Supply Chain AI Specialist": ["Supply Chain AI Data Scientist", "AI-Powered Analytics Consultant", "Operations Manager"],
+"Shipping Operations Analyst": ["Logistics AI Product Manager", "AI-Powered Analytics Consultant", "Supply Chain Manager"],
+
+// =======================
+// Emerging / Miscellaneous - Extended
+// =======================
+"CleanTech Innovation Specialist": ["CleanTech AI Specialist", "Sustainable Energy AI Analyst", "Renewable Energy AI Project Manager"],
+"Corporate Sustainability Analyst": ["ESG AI Consultant", "Sustainable Tech Product Manager", "AI Sustainability Analyst"],
+"Drone Mapping Specialist": ["Drone AI Operations Manager", "Autonomous Drone Developer", "Drone Logistics AI Specialist"],
+"Space Technology Engineer": ["Space AI Systems Engineer", "Satellite AI Technology Analyst", "Autonomous Systems AI Consultant"],
+"Bioinformatics AI Specialist": ["Bioinformatics AI Consultant", "Genomics Data Scientist", "Precision Medicine Specialist"],
+"Digital Health Technology Manager": ["Digital Health AI Analyst", "HealthTech Product Manager", "Healthcare Innovation Analyst"],
+"Autonomous Transportation AI Specialist": ["Autonomous Vehicle Data Scientist", "Autonomous Fleet AI Strategist", "Smart Transportation Data Analyst"],
+"Smart City Technology Analyst": ["Smart City AI Technology Specialist", "Urban Innovation Consultant", "Digital Sustainability AI Strategist"],
+"Environmental Innovation Specialist": ["ESG AI Consultant", "Climate Data AI Scientist", "Sustainable Transportation AI Analyst"]
+
+
+  };
+
+  const out = new Set();
+  roles.forEach((r) => {
+    const list = map[r];
+    if (list && Array.isArray(list)) list.forEach((x) => out.add(x));
+  });
+
+  if (!out.size) {
+    const inferred = inferRolesFromKeywords(roles || []);
+    inferred.forEach((r) => out.add(r));
+  }
+
+  return Array.from(out).slice(0, 6);
+};

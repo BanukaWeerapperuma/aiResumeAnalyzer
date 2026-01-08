@@ -2,6 +2,8 @@ import { useEffect  , useState } from "react";
 import constants , {
   buildPresenceChecklist , 
   METRIC_CONFIG , 
+  inferRolesFromKeywords,
+  getRelatedRoles,
 } from "../constants.js";
 import * as pdfjsLib from "pdfjs-dist";
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.min?url";
@@ -80,6 +82,8 @@ function App() {
     return result;
   };
 
+  
+
   const handleFileUpload = async (e) =>{
     const file = e.target.files[0];
     if (!file || file.type !== "application/pdf"){
@@ -95,11 +99,17 @@ function App() {
       const text = await extractPDFText(file);
       setResumeText(text);
       setPresenceChecklist(buildPresenceChecklist(text));
-      setAnalysis(await analyzeResume(text));
 
-    }catch (err){
+      const aiResult = await analyzeResume(text);
+      setAnalysis(aiResult);
+
+      // attempt to enrich analysis by visiting linked profiles (GitHub / LinkedIn)
+      const enriched = await enrichAnalysisFromProfiles(aiResult, text);
+      setAnalysis(enriched);
+
+    } catch (err) {
       alert(`Error:${err.message}`);
-    }finally{
+    } finally {
       setIsLoading(false);
     }
   }
@@ -110,6 +120,173 @@ function App() {
     setResumeText("");
     setPresenceChecklist([]);
   }
+
+  
+
+  const extractLinksFromText = (text = "") => {
+    const urls = [];
+    const urlRegex = /(https?:\/\/[^\s)]+)|(www\.[^\s)]+)/gi;
+    const matches = text.match(urlRegex) || [];
+    matches.forEach((m) => {
+      let url = m;
+      if (!/^https?:\/\//i.test(url)) url = `https://${url}`;
+      // normalize linkedin / github short forms
+      if (/linkedin\.com\//i.test(url) || /github\.com\//i.test(url)) urls.push(url.split(/[)\s]/)[0]);
+    });
+    // also try to pick up plaintext github/username or linkedin/in/slug
+    const ghMatch = text.match(/github\.com\/[A-Za-z0-9-_]+/gi) || [];
+    ghMatch.forEach((m) => urls.push(`https://${m}`));
+    const liMatch = text.match(/linkedin\.com\/[A-Za-z0-9-_/]+/gi) || [];
+    liMatch.forEach((m) => urls.push(`https://${m}`));
+    return Array.from(new Set(urls));
+  };
+
+  const fetchProfileData = async (url) => {
+    try {
+      const res = await fetch(url, { method: "GET" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const text = await res.text();
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(text, "text/html");
+
+      // Generic text extraction
+      const pageText = doc.body ? doc.body.innerText : text;
+
+      // GitHub parsing
+      if (/github\.com/i.test(url)) {
+        const username = url.split("github.com/")[1]?.split(/[^A-Za-z0-9-_]/)[0];
+        const bioEl = doc.querySelector('.p-note') || doc.querySelector('.user-profile-bio') || doc.querySelector('meta[name="description"]');
+        const bio = bioEl ? (bioEl.innerText || bioEl.getAttribute?.('content') || '') : '';
+        const repoEls = Array.from(doc.querySelectorAll('a[href*="/' + username + '/"]'))
+          .map((a) => a.textContent.trim())
+          .filter(Boolean);
+        return { type: 'github', url, username, bio, repos: repoEls.slice(0, 10), text: pageText };
+      }
+
+      // LinkedIn parsing
+      if (/linkedin\.com/i.test(url)) {
+        const slug = url.split('linkedin.com/')[1]?.split(/[?/#]/)[0];
+        const nameEl = doc.querySelector('.pv-text-details__left-panel h1') || doc.querySelector('.top-card-layout__title') || doc.querySelector('meta[property="og:title"]');
+        const headlineEl = doc.querySelector('.text-body-medium') || doc.querySelector('.top-card-layout__headline') || doc.querySelector('meta[name="description"]');
+        const name = nameEl ? (nameEl.innerText || nameEl.getAttribute?.('content') || '') : '';
+        const headline = headlineEl ? (headlineEl.innerText || headlineEl.getAttribute?.('content') || '') : '';
+        // certifications and experience via text search
+        const certs = (pageText.match(/certificat|certified|certificate|coursera|udemy|aws certified|google certified/gi) || []).slice(0, 20);
+        const experiences = (pageText.match(/\b\w+\s+at\s+\w+|experience|worked at|years of experience|\d+\s+years/gi) || []).slice(0, 20);
+        return { type: 'linkedin', url, slug, name, headline, certifications: certs, experiences, text: pageText };
+      }
+
+      return { type: 'unknown', url, text: pageText };
+    } catch (err) {
+      return { type: 'error', url, error: err.message };
+    }
+  };
+
+  const enrichAnalysisFromProfiles = async (analysisObj, text) => {
+    const analysis = { ...(analysisObj || {}) };
+    const links = extractLinksFromText(text || resumeText || '');
+    if (!links.length) return analysis;
+
+    const profileResults = await Promise.allSettled(links.map((u) => fetchProfileData(u)));
+    const extractedKeywords = new Set(analysis.keywords || []);
+    profileResults.forEach((r) => {
+      if (r.status !== 'fulfilled') return;
+      const p = r.value;
+      if (!p) return;
+      if (p.type === 'github') {
+        if (p.bio) p.bio.split(/[^A-Za-z0-9]+/).forEach((w) => w && extractedKeywords.add(w));
+        (p.repos || []).forEach((rname) => rname.split(/[^A-Za-z0-9]+/).forEach((w) => w && extractedKeywords.add(w)));
+      } else if (p.type === 'linkedin') {
+        if (p.headline) p.headline.split(/[^A-Za-z0-9]+/).forEach((w) => w && extractedKeywords.add(w));
+        (p.certifications || []).forEach((c) => c.split(/[^A-Za-z0-9]+/).forEach((w) => w && extractedKeywords.add(w)));
+        (p.experiences || []).forEach((e) => e.split(/[^A-Za-z0-9]+/).forEach((w) => w && extractedKeywords.add(w)));
+      } else if (p.type === 'unknown' && p.text) {
+        p.text.split(/[^A-Za-z0-9]+/).slice(0, 50).forEach((w) => w && extractedKeywords.add(w));
+      }
+    });
+
+    // merge keywords back into analysis
+    analysis.keywords = Array.from(extractedKeywords).slice(0, 60);
+
+    // recompute recommended roles and related roles
+    const inferred = inferRolesFromKeywords(analysis.keywords || []);
+    analysis.recommendedRoles = Array.from(new Set([...(analysis.recommendedRoles || []), ...inferred]));
+    // trim
+    analysis.recommendedRoles = analysis.recommendedRoles.slice(0, 8);
+    analysis.recommendedRelatedRoles = getRelatedRoles(analysis.recommendedRoles || []);
+
+    return analysis;
+  };
+
+  // helper to map badge classes by provenance
+  const getBadgeClassForSource = (source) => {
+    if (!source) return 'text-xs text-slate-400 rounded px-1.5 py-0.5 bg-slate-800/20';
+    if (String(source).toLowerCase() === 'ai')
+      return 'text-xs font-semibold text-emerald-300 rounded px-1.5 py-0.5 bg-emerald-900/20';
+    if (String(source).toLowerCase() === 'inferred')
+      return 'text-xs font-semibold text-indigo-300 rounded px-1.5 py-0.5 bg-indigo-900/20';
+    return 'text-xs font-semibold text-slate-400 rounded px-1.5 py-0.5 bg-slate-800/20';
+  };
+
+  // tuned scoring: stronger AI boost, stronger keyword matches, exact token match bonus
+  const scoreAndSortRoles = (roles = [], keywords = [], aiProvided = []) => {
+    const kw = (keywords || []).map((k) => String(k).toLowerCase());
+    const aiSet = new Set((aiProvided || []).map((r) => String(r).toLowerCase()));
+
+    const scored = Array.from(new Set(roles || [])).map((role) => {
+      const rlow = String(role).toLowerCase();
+      let score = 0;
+      // stronger boost if AI recommended this role
+      if (aiSet.has(rlow)) score += 5;
+      // keyword/token matches: exact token matches score higher
+      const tokens = rlow.split(/[^a-z0-9]+/).filter(Boolean);
+      tokens.forEach((t) => {
+        kw.forEach((k) => {
+          if (k === t) {
+            score += 4; // exact keyword <-> token
+          } else if (k.includes(t) || t.includes(k)) {
+            score += 2; // partial match
+          }
+        });
+      });
+      // small length bonus to slightly prefer concise role names
+      score += Math.max(0, 3 - tokens.length * 0.15);
+      return { role, score };
+    });
+
+    scored.sort((a, b) => b.score - a.score || a.role.localeCompare(b.role));
+    return scored.map((s) => s.role);
+  };
+
+  const computeRecommendedRoles = (analysisObj) => {
+    const analysis = analysisObj || {};
+    const aiProvided = analysis.recommendedRoles || [];
+    const base = (aiProvided.length ? aiProvided : (analysis.recommendedJobRoles || analysis.jobRoles || inferRolesFromKeywords(analysis.keywords || [])));
+    const keywords = analysis.keywords || [];
+    const sorted = scoreAndSortRoles(base, keywords, aiProvided).slice(0, 6);
+    const inferred = inferRolesFromKeywords(keywords || []);
+    return sorted.map((role) => ({
+      role,
+      source: aiProvided.map((r) => String(r).toLowerCase()).includes(String(role).toLowerCase())
+        ? 'AI'
+        : inferred.map((r) => String(r).toLowerCase()).includes(String(role).toLowerCase())
+        ? 'Inferred'
+        : 'Related',
+    }));
+  };
+
+  const computeRelatedRoles = (analysisObj) => {
+    const analysis = analysisObj || {};
+    const rec = analysis.recommendedRoles && analysis.recommendedRoles.length ? analysis.recommendedRoles : (analysis.recommendedJobRoles || analysis.jobRoles || inferRolesFromKeywords(analysis.keywords || []));
+    const related = analysis.recommendedRelatedRoles || analysis.relatedRoles || getRelatedRoles(rec || []);
+    const sorted = scoreAndSortRoles(related, analysis.keywords || [], rec || []).slice(0, 6);
+    const inferred = inferRolesFromKeywords(analysis.keywords || []);
+    const aiProvidedLower = (rec || []).map((r) => String(r).toLowerCase());
+    return sorted.map((role) => ({
+      role,
+      source: aiProvidedLower.includes(String(role).toLowerCase()) ? 'AI' : inferred.map((r) => String(r).toLowerCase()).includes(String(role).toLowerCase()) ? 'Inferred' : 'Related',
+    }));
+  };
 
   return (
     <div className="min-h-screen bg-main-gradient p-4 sm:p-6 lg:p-8 flex items-center justify-center">
@@ -445,6 +622,52 @@ function App() {
                   <span className="text-lg mt-0.5">💡</span>
                     Consider incorporating these keywords naturally into your resume to improve ATS compatability and increase your chances of getting noticed by recruiters.
                   
+                </p>
+              </div>
+               </div>
+               <div className="section-card group">
+                <div className="flex items-center gap-3 mb-6">
+              <div className="icon-container bg-indigo-500/20">
+              <span className="text-lg">💼</span>
+              </div>
+              
+              <h2 className="text-indigo-400 font-bold text-xl">Recommended Job Roles
+              </h2>
+            </div>
+            <div className="flex flex-wrap gap-3 mb-4">{computeRecommendedRoles(analysis).map((item , i) => (
+              <span key={i} className="keyword-tag group/item flex items-center gap-2">
+                <span>{item.role}</span>
+                <span className={getBadgeClassForSource(item.source)}>{item.source}</span>
+              </span>
+            ))}
+
+            </div>
+              <div className="info-box-indigo">
+                <p className="text-slate-300 text-sm leading-relaxed">
+                  These roles match the experience and keywords detected in your resume.
+                </p>
+              </div>
+               </div>
+               <div className="section-card group">
+                <div className="flex items-center gap-3 mb-6">
+              <div className="icon-container bg-sky-500/20">
+              <span className="text-lg">🔗</span>
+              </div>
+              
+              <h2 className="text-sky-400 font-bold text-xl">Related Job Roles
+              </h2>
+            </div>
+            <div className="flex flex-wrap gap-3 mb-4">{computeRelatedRoles(analysis).map((item , i) => (
+              <span key={i} className="keyword-tag group/item flex items-center gap-2">
+                <span>{item.role}</span>
+                <span className={getBadgeClassForSource(item.source)}>{item.source}</span>
+              </span>
+            ))}
+
+            </div>
+              <div className="info-box-sky">
+                <p className="text-slate-300 text-sm leading-relaxed">
+                  Roles related to the ones above — useful for broader job searches and transfers.
                 </p>
               </div>
                </div>
