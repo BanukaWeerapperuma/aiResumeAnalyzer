@@ -338,15 +338,45 @@ function App() {
         <div className="info-box-cyan group/item">
         <div className="flex items-center gap-3 mb-2">
           <span className="text-lg text-cyan-400">🎯</span>
-          <h3 className="text-cyam-300 font-semibold">Action Items
+          <h3 className="text-cyan-300 font-semibold">Action Items
                 </h3>
               </div>
 
-              
+            <div className="space-y-2"> {(analysis.actionItems || [
+              "Optimize keyword placement for better ATS scoring",
+              "Enhance content with quantifiable achievements",
+              "Consider industry-specific terminology",
+              ]).map((item , index) => (
+                <div className="list-item-cyan" key={index}>
+                  <span className="text-cyan-400">•</span>
+                  <span>{item}</span>
+                </div>
+              ))}
+              </div>
+            </div>
+            <div className="info-box-emerald group/item">
+            <div className="flex items-center gap-3 mb-2">
+              <span className="text-lg"></span>
+              <h3 className="text-emerald-300 font-semibold">Pro Tips</h3>
+            </div>
+            <div className="space-y-2">
+              {(
+                analysis.proTips || [
+                "Use action verbs to start bullect points" , 
+                "Keep descriptions concise and impactful" , 
+                "Tailor Keywords to specific job descriptions",
+              ]
+            ).map((tip , index) => (
+              <div className="list-item-emerald">
+                <span className="text-emerald-400">•</span>
+                <span>{tip}</span>
+              </div>
+            ))}
+            </div>
             </div>
           </div>
        </div>
-
+       
           </div>
         )}
       </div>
